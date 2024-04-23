@@ -1,0 +1,17 @@
+-- local client = socket.tcp()
+-- client:connect("127.0.0.1", 8080)
+-- client:settimeout(0)
+-- 
+-- function init(self)
+-- 
+-- 
+-- 	client:send("foobar")
+-- 	-- local response = client:receive("*l")
+-- 	-- print(response)
+-- end
+-- 
+-- function finalize(self)
+-- 	if self.connection ~= nil then
+-- 		websocket.disconnect(self.connection)
+-- 	end
+-- end

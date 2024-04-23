@@ -1,0 +1,132 @@
+--#IF HEADLESS
+local can_run = true
+--#ELSE
+local can_run = false
+--#ENDIF
+
+
+
+
+local mp = require("utils.MessagePack")
+require("utils.message_splitter")
+
+local players = {123, 456}
+local player_ids = {}
+
+function init(self)
+
+	if not can_run then
+		self.delete()
+		-- go.delete()
+	end 
+
+	udp_port = 5555
+	udp = socket.udp()
+	udp:setsockname("*", udp_port)
+	udp:settimeout(0)
+	print("Server started on port " .. udp_port)
+
+	local tank_ids= collectionfactory.create("/spawner#tank_spawner", vmath.vector3(523,100,1))
+	pprint(tank_ids)
+
+	for key, val in pairs(players) do
+		local id = collectionfactory.create("/spawner#player_spawner", vmath.vector3(rnd.range(300, 400),100,1))
+		pprint(id)
+		-- player_ids.insert(id)
+	end
+
+	pprint(player_ids)
+
+end
+
+function final(self)
+	go.delete()
+
+end
+
+function update(self, dt)
+	-- print(dt)
+
+end
+
+function fixed_update(self, dt)
+	while true do
+		local data, ip, port = udp:receivefrom()
+		if data then
+			local unpacked_data = mp.unpack(data)
+			local player_id = unpacked_data[1]
+			local client_steps = unpacked_data[2]
+			-- print(unpacked_data[1])
+			-- print("input buffer:", dump(unpacked_data[2]))
+			-- local player_id, client_steps = mp.unpack(data)
+			-- print("Player ID: " .. player_id[1])
+			-- -- local client_steps = mp.unpack(data)
+			process_player_input(player_id, client_steps, dt)
+		end
+	end
+end
+		
+	
+
+function process_player_input(player_id, client_steps, dt)
+	-- print("client_steps:", dump(client_steps))
+	pprint(client_steps)
+
+	local player = players[player_id]
+	if not player then
+		-- Create a new player instance if it doesn't exist
+		player = {
+			position = vmath.vector3(),
+			speed = 400
+		}
+		players[player_id] = player
+	end
+	
+
+	for _, step in ipairs(client_steps) do
+		local input_x, input_y, x, y, z = unpack(step)
+		local direction = vmath.vector3(input_x, input_y, 0)
+		local desired_position = vmath.vector3(x, y, z) + direction * player.speed * dt
+
+		-- Validate the desired position and update the player's position
+		player.position = validate_position(player.position, desired_position)
+	end
+end
+
+function validate_position(current_position, desired_position)
+	-- Implement your validation logic here
+	-- For example, you can check if the desired position is within a certain distance from the current position
+	local max_distance = 100 -- Adjust this value as needed
+	local distance = vmath.length(desired_position - current_position)
+	if distance <= max_distance then
+		return desired_position
+	else
+		return current_position
+	end
+end
+
+
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Learn more: https://defold.com/manuals/message-passing/
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here. The game object this script is attached to
+	-- must have acquired input focus:
+	--
+	--    msg.post(".", "acquire_input_focus")
+	--
+	-- All mapped input bindings will be received. Mouse and touch input will
+	-- be received regardless of where on the screen it happened.
+	-- Learn more: https://defold.com/manuals/input/
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

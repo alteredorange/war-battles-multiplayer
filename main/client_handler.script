@@ -1,0 +1,94 @@
+server_address = "127.0.0.1"
+server_port = 5555
+udp = socket.udp()
+udp:settimeout(0)
+currentLevel = 0
+
+function init(self)
+	
+	msg.post("/Main_menu_proxy#main_menu_proxy", "load")
+
+	-- Add initialization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function fixed_update(self, dt)
+	-- This function is called if 'Fixed Update Frequency' is enabled in the Engine section of game.project
+	-- Can be coupled with fixed updates of the physics simulation if 'Use Fixed Timestep' is enabled in
+	-- Physics section of game.project
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == (hash("start_level1")) then
+		currentLevel = 1
+		msg.post("/level1_proxy#level1_proxy", "load")
+		print("you pressed 1!!")
+
+	elseif message_id == (hash("start_level2")) then
+		currentLevel = 2
+		msg.post("/level2_proxy#level2_proxy", "load")
+		print("you pressed 2!!")
+
+
+	elseif message_id == hash("proxy_loaded") then
+
+		if currentLevel ~= 0 then
+			msg.post("/Main_menu_proxy#main_menu_proxy", "unload")
+		end
+		
+		if currentLevel == 0 then
+			msg.post("/Main_menu_proxy#main_menu_prox", "acquire_input_focus")
+		elseif currentLevel == 1 then
+			msg.post("/level1_proxy#level1_proxy", "acquire_input_focus")
+		elseif currentLevel == 2 then
+			msg.post("/level2_proxy#level2_proxy", "acquire_input_focus")
+		end
+		
+
+		print("level has loaded")
+		pprint(message_id )
+	
+		msg.post(sender, "init")
+		msg.post(sender, "enable")
+		
+		
+	
+	end
+	
+end
+
+function on_input(self, action_id, action)
+
+	
+	-- Add input-handling code here. The game object this script is attached to
+	-- must have acquired input focus:
+	--
+	--    msg.post(".", "acquire_input_focus")
+	--
+	-- All mapped input bindings will be received. Mouse and touch input will
+	-- be received regardless of where on the screen it happened.
+	-- Learn more: https://defold.com/manuals/input/
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end
