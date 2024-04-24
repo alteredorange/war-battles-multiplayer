@@ -1,10 +1,36 @@
+--#IF HEADLESS
+local can_run = false
+--#ELSE
+local can_run = true
+--#ENDIF
+
+local mp = require("utils.MessagePack")
+
+player_id = rnd.range(1000, 9999)
+
 server_address = "127.0.0.1"
 server_port = 5555
 udp = socket.udp()
 udp:settimeout(0)
 currentLevel = 0
 
+-- message types
+-- 1 = auth
+-- 2 = level request
+-- 3 = client movement
+-- 4 = other player movement
+-- 5 = correction (from server)
+
+
+counter = 0
+
+
 function init(self)
+
+	if not can_run then
+		self.delete()
+	end 
+
 	
 	msg.post("/Main_menu_proxy#main_menu_proxy", "load")
 
@@ -34,17 +60,26 @@ function fixed_update(self, dt)
 	-- Remove this function if not needed
 end
 
+local function start_level_client(level)
+	local has_started = 0
+	local message = mp.pack({player_id, 2, level})
+	udp:sendto(message, server_address, server_port)
+	-- udp:sendto(message, server_address, server_port)
+	-- udp:sendto(message, server_address, server_port)
+end 
+
 function on_message(self, message_id, message, sender)
 	if message_id == (hash("start_level1")) then
+		print("here....")
 		currentLevel = 1
+		start_level_client(currentLevel)
 		msg.post("/level1_proxy#level1_proxy", "load")
-		print("you pressed 1!!")
-
+		print("there...")
+		
+	
 	elseif message_id == (hash("start_level2")) then
 		currentLevel = 2
 		msg.post("/level2_proxy#level2_proxy", "load")
-		print("you pressed 2!!")
-
 
 	elseif message_id == hash("proxy_loaded") then
 

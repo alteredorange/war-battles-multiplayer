@@ -4,21 +4,42 @@ local can_run = true
 local can_run = false
 --#ENDIF
 
-
-
-
 local mp = require("utils.MessagePack")
-require("utils.message_splitter")
+-- require("utils.message_splitter")
 
-local players = {123, 456}
-local player_ids = {}
+local clients = {}
+
+
+-- local players = {123, 456}
+player_ids = {}
+
+currentLevel = 0
+local wait_for_more_players = false
+
+function start_level(self, handle, time_elapsed)
+	wait_for_more_players = false
+	print("loading waiting players into level from server")
+	udp:connected:send(mp.pack("this is from the server mannnn!"))
+end 
+
+
+function wait_for_me(seconds, level)
+	wait_for_more_players = true
+	timer.delay(seconds, false, start_level)
+end
+
+counter = 0
+
+
+
 
 function init(self)
 
 	if not can_run then
 		self.delete()
-		-- go.delete()
 	end 
+
+	
 
 	udp_port = 5555
 	udp = socket.udp()
@@ -26,21 +47,27 @@ function init(self)
 	udp:settimeout(0)
 	print("Server started on port " .. udp_port)
 
-	local tank_ids= collectionfactory.create("/spawner#tank_spawner", vmath.vector3(523,100,1))
-	pprint(tank_ids)
 
-	for key, val in pairs(players) do
-		local id = collectionfactory.create("/spawner#player_spawner", vmath.vector3(rnd.range(300, 400),100,1))
-		pprint(id)
-		-- player_ids.insert(id)
-	end
+	-- random udp port 
+	-- rnd.range(49152, 65535)
+	
 
-	pprint(player_ids)
+
+	-- local tank_ids= collectionfactory.create("/spawner#tank_spawner", vmath.vector3(523,100,1))
+	-- pprint(tank_ids)
+
+-- 	for key, val in pairs(players) do
+-- 		local id = collectionfactory.create("/spawner#player_spawner", vmath.vector3(rnd.range(300, 400),100,1))
+-- 		pprint(id)
+-- 		-- player_ids.insert(id)
+-- 	end
+-- 
+-- 	pprint(player_ids)
 
 end
 
 function final(self)
-	go.delete()
+	-- go.delete()
 
 end
 
@@ -50,25 +77,74 @@ function update(self, dt)
 end
 
 function fixed_update(self, dt)
-	while true do
-		local data, ip, port = udp:receivefrom()
-		if data then
-			local unpacked_data = mp.unpack(data)
-			local player_id = unpacked_data[1]
-			local client_steps = unpacked_data[2]
-			-- print(unpacked_data[1])
-			-- print("input buffer:", dump(unpacked_data[2]))
-			-- local player_id, client_steps = mp.unpack(data)
-			-- print("Player ID: " .. player_id[1])
-			-- -- local client_steps = mp.unpack(data)
-			process_player_input(player_id, client_steps, dt)
+
+	local data, ip, port = udp:receivefrom()
+	if data then
+
+		local unpacked_data = mp.unpack(data)
+		local player_id = unpacked_data[1]
+		local data_type = unpacked_data[2]
+		local data_data = unpacked_data[3]
+		-- pprint(unpacked_data)
+		if data_type == 1 then
+			--handle auth
+
+		else if data_type == 2 then
+			load_level(player_id, data_data)
+
+
+		elseif data_type == 3 then
+			handle_input(player_id, data_data)
+
 		end
+
+		-- local client_steps = unpacked_data[2]
+		-- print(unpacked_data[1])
+		-- print("input buffer:", dump(unpacked_data[2]))
+		-- local player_id, client_steps = mp.unpack(data)
+		-- print("Player ID: " .. player_id[1])
+		-- local client_steps = mp.unpack(data)
+		-- process_player_input(player_id, client_steps, dt)
 	end
 end
-		
-	
+end 
 
-function process_player_input(player_id, client_steps, dt)
+
+
+-- timer.delay(1, false, function() print("print in one second") end)
+-- local wait_for_players = coroutine.create(function (seconds, level)
+-- 	print("inside coroutine BEFORE DELAY")
+-- 	-- timer.delay(seconds, false, start_level)
+-- 	-- timer.delay(5, false, function() print("ahhh")end)
+-- 	timer.delay(1, true, function() print("print in one second") end)
+-- 	print("inside coroutine AFTER DELAY")
+-- end)
+
+
+
+
+
+function load_level(player_id, level)
+	if level == 1 then
+		-- local current_players = {}
+		table.insert(player_ids, player_id)
+		
+		currentLevel = 1
+		msg.post("/level1_proxy#level1_proxy", "load")
+		print("server is loading level 1, wait 5 seconds for more players")
+		if wait_for_more_players == false then
+			wait_for_me(5, level)
+		end	
+		-- coroutine.resume(wait_for_players, 5, 1)
+	elseif level == 2 then
+		currentLevel = 2
+		msg.post("/level2_proxy#level2_proxy", "load")
+	end 
+end 
+
+
+
+local function process_player_input(player_id, client_steps, dt)
 	-- print("client_steps:", dump(client_steps))
 	pprint(client_steps)
 
@@ -108,9 +184,21 @@ end
 
 
 function on_message(self, message_id, message, sender)
-	-- Add message-handling code here
-	-- Learn more: https://defold.com/manuals/message-passing/
-	-- Remove this function if not needed
+
+	if message_id == hash("proxy_loaded") then
+		if currentLevel ~= 0 then
+			msg.post("/Main_menu_proxy#main_menu_proxy", "unload")
+		end
+
+		if currentLevel == 0 then
+			--do nothing/wait for level selection
+		elseif currentLevel == 1 then
+			-- load playesr into level 1
+		elseif currentLevel == 2 then
+			-- load playesr into level 2
+	end
+end
+	
 end
 
 function on_input(self, action_id, action)

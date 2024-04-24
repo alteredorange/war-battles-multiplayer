@@ -183,7 +183,7 @@ function fixed_update(self, dt)
 	-- Send the buffered inputs to the server
 	if update_tick == 10 then
 		if  should_send and #input_buffer > 0 then
-			local input_pack = mp.pack({id, input_buffer})
+			local input_pack = mp.pack({id, 3, input_buffer})
 			udp:sendto(input_pack, server_address, server_port)
 			input_buffer = {}
 		end
