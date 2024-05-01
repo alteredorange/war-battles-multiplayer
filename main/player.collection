@@ -5,7 +5,7 @@ embedded_instances {
   children: "camera"
   data: "components {\n"
   "  id: \"player\"\n"
-  "  component: \"/main/player_client.script\"\n"
+  "  component: \"/scripts/client/player_claude.script\"\n"
   "  position {\n"
   "    x: 0.0\n"
   "    y: 0.0\n"

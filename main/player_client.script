@@ -35,7 +35,7 @@ udp:settimeout(0)
 
 function init(self)
 
-	camera.acquire_focus("camera#camera")
+	-- camera.acquire_focus("camera#camera")
 	-- self.client = client:connect(IP, PORT)
 	-- client:settimeout(0)
 	-- print(self.client)
@@ -53,7 +53,7 @@ function init(self)
 
 	-- client:send('{"u":1}\n')
 	
-	msg.post(".", "acquire_input_focus")            -- [2]
+	-- msg.post(".", "acquire_input_focus")            -- [2]
 
 	self.moving = false          
 	self.firing = false    		                   -- [3]

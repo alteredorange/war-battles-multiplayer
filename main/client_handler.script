@@ -8,11 +8,16 @@ local mp = require("utils.MessagePack")
 
 player_id = rnd.range(1000, 9999)
 
+
+
 server_address = "127.0.0.1"
-server_port = 5555
-udp = socket.udp()
-udp:settimeout(0)
-currentLevel = 0
+server_port = 12345
+client = socket.udp()
+client:settimeout(0)
+-- udp:setsockname("*", 7777)
+client:setpeername(server_address, server_port)
+
+current_level = 0
 
 -- message types
 -- 1 = auth
@@ -27,10 +32,12 @@ counter = 0
 
 function init(self)
 
-	if not can_run then
-		self.delete()
-	end 
+		if not can_run then
+			go.delete()
+			return
+		end 
 
+		
 	
 	msg.post("/Main_menu_proxy#main_menu_proxy", "load")
 
@@ -40,6 +47,8 @@ function init(self)
 end
 
 function final(self)
+	client:close()
+	go.delete()
 	-- Add finalization code here
 	-- Learn more: https://defold.com/manuals/script/
 	-- Remove this function if not needed
@@ -51,58 +60,82 @@ function update(self, dt)
 	-- Remove this function if not needed
 end
 
+
+function client_data(data)
+	
+	-- data_type dictionary
+	-- SERVER
+	-- 1 = auth  //TBD
+	-- 2 = load level
+	-- 3 = player input
+	-- 4 = heartbeat //TBD
+	-- CLIENT
+	-- 5 = player load
+	-- 6 = player updates
+	-- 8 = heartbeat //TBD
+
+	local unpacked_data = mp.unpack(data)
+	local pid = unpacked_data[1]
+	local data_type = unpacked_data[2]
+	local message = unpacked_data[3]
+	pprint(data_data)
+
+	if data_type == 5 then
+		local x = message[1]
+		local y = message[2]
+		if pid == player_id then
+			msg.post("level-01:/level_handler#level_handler", "spawn_main_player", {pid,x,y} ) 
+		else
+			msg.post("level-01:/level_handler#level_handler", "spawn_other_player", {pid,x,y} ) 
+		end
+	end
+end 
+
+
+
 function fixed_update(self, dt)
-	-- This function is called if 'Fixed Update Frequency' is enabled in the Engine section of game.project
-	-- Can be coupled with fixed updates of the physics simulation if 'Use Fixed Timestep' is enabled in
-	-- Physics section of game.project
-	-- Add update code here
-	-- Learn more: https://defold.com/manuals/script/
-	-- Remove this function if not needed
+	-- client:send(mp.pack({player_id, 5, dt}))
+	local data = client:receive()
+	if data then 
+		client_data(data) 
+	end
 end
 
 local function start_level_client(level)
-	local has_started = 0
-	local message = mp.pack({player_id, 2, level})
-	udp:sendto(message, server_address, server_port)
-	-- udp:sendto(message, server_address, server_port)
-	-- udp:sendto(message, server_address, server_port)
+	
 end 
 
 function on_message(self, message_id, message, sender)
-	if message_id == (hash("start_level1")) then
-		print("here....")
-		currentLevel = 1
-		start_level_client(currentLevel)
-		msg.post("/level1_proxy#level1_proxy", "load")
-		print("there...")
-		
-	
-	elseif message_id == (hash("start_level2")) then
-		currentLevel = 2
-		msg.post("/level2_proxy#level2_proxy", "load")
+	if message_id == (hash("load_level")) then
+		current_level = message.level
+		--tell server to load level
+		local data = mp.pack({player_id, 2, current_level})
+		client:send(data)
+
+		if current_level == 1 then msg.post("/level1_proxy#level1_proxy", "load") end
+		if current_level == 2 then msg.post("/level2_proxy#level2_proxy", "load") end
 
 	elseif message_id == hash("proxy_loaded") then
 
-		if currentLevel ~= 0 then
+		if current_level ~= 0 then
 			msg.post("/Main_menu_proxy#main_menu_proxy", "unload")
 		end
 		
-		if currentLevel == 0 then
+		if current_level == 0 then
+			msg.post(sender, "init")
+			msg.post(sender, "enable")
 			msg.post("/Main_menu_proxy#main_menu_prox", "acquire_input_focus")
-		elseif currentLevel == 1 then
+		elseif current_level == 1 then
+			msg.post(sender, "init")
+			msg.post(sender, "enable")
 			msg.post("/level1_proxy#level1_proxy", "acquire_input_focus")
-		elseif currentLevel == 2 then
+		elseif current_level == 2 then
 			msg.post("/level2_proxy#level2_proxy", "acquire_input_focus")
 		end
 		
 
 		print("level has loaded")
-		pprint(message_id )
-	
-		msg.post(sender, "init")
-		msg.post(sender, "enable")
-		
-		
+		-- pprint(message_id )		
 	
 	end
 	

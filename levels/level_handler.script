@@ -1,0 +1,69 @@
+function init(self)
+	print(msg.url())
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function fixed_update(self, dt)
+	-- This function is called if 'Fixed Update Frequency' is enabled in the Engine section of game.project
+	-- Can be coupled with fixed updates of the physics simulation if 'Use Fixed Timestep' is enabled in
+	-- Physics section of game.project
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("spawn_other_player") then
+		print("got the spawn other player message!")
+		local client_id = message[1]
+		local x = message[2]
+		local y = message[3]
+		local props = {}
+		props[hash("/player")] = {client_id = client_id}
+		local id = collectionfactory.create("/spawner#other_players_spawner",  vmath.vector3(x, y, 0), nil, props)
+
+	elseif message_id == hash("spawn_main_player") then 
+		print("got the spawn  main player message!")
+		pprint(message)
+		local client_id = message[1]
+		local x = message[2]
+		local y = message[3]
+		local props = {}
+		props[hash("/player")] = {client_id = client_id}
+		local id = collectionfactory.create("/spawner#player_spawner",  vmath.vector3(x, y, 0), nil, props)
+	end 
+		
+	
+	-- Add message-handling code here
+	-- Learn more: https://defold.com/manuals/message-passing/
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here. The game object this script is attached to
+	-- must have acquired input focus:
+	--
+	--    msg.post(".", "acquire_input_focus")
+	--
+	-- All mapped input bindings will be received. Mouse and touch input will
+	-- be received regardless of where on the screen it happened.
+	-- Learn more: https://defold.com/manuals/input/
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end
