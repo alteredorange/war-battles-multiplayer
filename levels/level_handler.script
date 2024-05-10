@@ -1,6 +1,15 @@
+--#IF HEADLESS
+local can_run = false
+--#ELSE
+local can_run = true
+--#ENDIF
+
 function init(self)
-	print(msg.url())
+	
 end
+
+all_players = {}
+ag_players = {}
 
 function final(self)
 	-- Add finalization code here
@@ -31,17 +40,45 @@ function on_message(self, message_id, message, sender)
 		local y = message[3]
 		local props = {}
 		props[hash("/player")] = {client_id = client_id}
+		
 		local id = collectionfactory.create("/spawner#other_players_spawner",  vmath.vector3(x, y, 0), nil, props)
+		table.insert(all_players, client_id, id)
 
+	elseif message_id == hash("spawn_server_player") then
+			print("got the spawn server player message!")
+			local client_id = message[1]
+			local x = message[2]
+			local y = message[3]
+			local props = {}
+			props[hash("/player")] = {client_id = client_id}
+			
+			local id = collectionfactory.create("/spawner#server_players_spawner",  vmath.vector3(x, y, 0), nil, props)
+		
+			table.insert(all_players, client_id, id)
+
+		
 	elseif message_id == hash("spawn_main_player") then 
+	
 		print("got the spawn  main player message!")
-		pprint(message)
+		-- pprint(message)
 		local client_id = message[1]
 		local x = message[2]
 		local y = message[3]
 		local props = {}
 		props[hash("/player")] = {client_id = client_id}
+		-- print("client id from level handler = " .. client_id)
 		local id = collectionfactory.create("/spawner#player_spawner",  vmath.vector3(x, y, 0), nil, props)
+		table.insert(all_players, client_id, id)
+		-- print(id)
+
+	-- elseif message_id == hash("player_movement") then
+	-- 	local client_id = message[1]
+	-- 	local x = message[2]
+	-- 	local y = message[3]
+	-- 	go.get
+	-- 	local pos = go.get_position(all_players[client_id])
+	-- 	new_pos = pos + self.dir * (self.speed * dt)
+	-- 	go.set_position(new_pos)
 	end 
 		
 	

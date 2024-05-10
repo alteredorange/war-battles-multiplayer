@@ -1,0 +1,187 @@
+--#IF HEADLESS
+local can_run = true
+--#ELSE
+local can_run = false
+--#ENDIF
+
+go.property("client_id", 0)
+
+local cos_in_progress = {}
+local coroutines_queue = {}
+local current_queue = 0
+
+
+local tcp_client = require "defnet.tcp_client"
+local IP = "127.0.0.1" 
+local PORT = 7777
+local id = rnd.range(1000, 9999)
+local players = {}
+
+local tick = 0
+
+-- Server address and port
+local server_address = "127.0.0.1"
+local server_port = 5555
+
+local client_final_pos
+
+-- udp = socket.udp()
+-- udp:settimeout(0)
+
+
+function init(self)
+
+	if not can_run then
+		go.delete()
+		return
+	end 
+	
+	self.moving = false          
+	self.firing = false    		                  
+	self.input = vmath.vector3()                   
+	self.dir = vmath.vector3(0, 1, 0)               
+	self.speed = 400             
+
+	-- correction vector
+	self.correction = vmath.vector3()         
+	
+end
+
+function final(self)                                
+	msg.post(".", "release_input_focus")   
+	if self.client then
+		self.client.destroy()
+	end
+	-- udp:close()
+end
+
+-- Function to execute the next coroutine in the queue
+local function execute_next_coroutine()
+	-- print("inside execute")
+	if #coroutines_queue > 0 then
+		-- print(#coroutines_queue)
+		-- print("coroutines = " .. #coroutines_queue)
+		local co = coroutines_queue[1]
+		-- local co = table.remove(coroutines_queue, 1)
+		if coroutine.status(co) == "dead" then
+			-- print("got through a queue")
+			table.remove(coroutines_queue, 1)
+
+		else
+			-- print("running next step")
+			coroutine.resume(co)
+		end
+		-- execute_next_coroutine()
+	-- else print("the co queue is empty!")
+end
+end
+
+
+function update_animation(self, player)
+	local anim_dir = vmath.vector3(self.input.x, self.input.y, 0)
+
+	if anim_dir ~= self.anim_dir then
+		if self.anim_id ~= nil then
+			sprite.stop_animation(self.anim_id)
+			self.anim_id = nil
+		end
+
+		if vmath.length(anim_dir) > 0 then
+			local anim_name
+			if anim_dir.x > 0 then
+				anim_name = "player-right"
+			elseif anim_dir.x < 0 then
+				anim_name = "player-left"
+			elseif anim_dir.y > 0 then
+				anim_name = "player-up"
+			elseif anim_dir.y < 0 then
+				anim_name = "player-down"
+			else
+				anim_name = "player-idle"
+			end
+			sprite.play_flipbook("#sprite", anim_name)
+		end
+
+		self.anim_dir = anim_dir
+	end
+end
+
+
+
+function fixed_update(self, dt)
+
+	
+	-- update_animation(self)
+
+	if self.moving then
+		local pos = go.get_position()
+		new_pos = pos + self.dir * (self.speed * dt)
+		go.set_position(new_pos)
+		broadcast({self.client_id, 6, {new_pos.x, new_pos.y}})
+	end
+
+	if self.firing then
+		local angle = math.atan2(self.dir.y, self.dir.x)
+		local rot = vmath.quat_rotation_z(angle)
+		local props = {dir = self.dir}
+		factory.create("#rocketfactory", nil, rot, props)
+	end
+
+	self.input.x = 0
+	self.input.y = 0
+
+	self.moving = false
+	self.firing = false
+	
+-- Debugging location
+	if tick == 60 then
+		print("final position SERVER/CLIENT of "..self.client_id..":")
+		
+		print(go.get_position())
+		print(client_final_pos)
+		tick = 0
+	end 
+
+	tick = tick + 1 
+
+	if #coroutines_queue > 0 then
+		execute_next_coroutine()
+	end
+end
+
+
+
+
+function on_message(self, message_id, message, sender)
+
+	if message_id == hash("movement") then
+		local steps = message[1]
+		local final_x = message[2]
+		local final_y = message[3]
+		local client_final = vmath.vector3(final_x, final_y, 1)
+		current_queue = current_queue + #steps
+	
+		-- Wrap the coroutine creation in a function
+		local function create_coroutine()
+			local co = coroutine.create(function()
+				for key, step in pairs(steps) do
+					-- print("KEY: "..key)
+					local input_x = step[1]
+					local input_y = step[2]
+					local dt_sum = step[3]
+
+					self.input = vmath.vector3(input_x, input_y, 0)
+					if vmath.length(self.input) > 0 then
+						self.moving = true
+						self.dir = vmath.normalize(self.input)
+						-- print("direction set!")
+						client_final_pos = client_final
+					end
+					coroutine.yield()
+				end
+			end)
+			table.insert(coroutines_queue, co)
+		end
+		create_coroutine()
+	end
+end

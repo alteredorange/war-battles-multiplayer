@@ -32,7 +32,7 @@ udp = socket.udp()
 udp:settimeout(0)
 
 -- Buffer to store inputs
-local input_buffer = {}
+local input_bufffer = {}
 
 function init(self)
 -- 
@@ -73,35 +73,35 @@ function final(self)                                -- [7]
 end
 
 function update(self, dt)    
-	local player = players[id]
-	if player then
-
-		-- reset correction
-		player.correction = vmath.vector3()
-
-
-		update_animation(self, player)                 
-		if player.moving then
-			local pos = go.get_position()
-			pos = pos + player.dir * player.speed * dt
-			go.set_position(pos)
-		end
-
-		if player.firing then
-			local angle = math.atan2(player.dir.y, player.dir.x)
-			local rot = vmath.quat_rotation_z(angle)
-			local props = { dir = player.dir }
-			factory.create("#rocketfactory", nil, rot, props)
-		end
-
-		player.input.x = 0
-		player.input.y = 0
-
-		player.moving = false
-		player.firing = false
-
-		
-	end
+-- 	local player = players[id]
+-- 	if player then
+-- 
+-- 		-- reset correction
+-- 		player.correction = vmath.vector3()
+-- 
+-- 
+-- 		update_animation(self, player)                 
+-- 		if player.moving then
+-- 			local pos = go.get_position()
+-- 			pos = pos + player.dir * player.speed * dt
+-- 			go.set_position(pos)
+-- 		end
+-- 
+-- 		if player.firing then
+-- 			local angle = math.atan2(player.dir.y, player.dir.x)
+-- 			local rot = vmath.quat_rotation_z(angle)
+-- 			local props = { dir = player.dir }
+-- 			factory.create("#rocketfactory", nil, rot, props)
+-- 		end
+-- 
+-- 		player.input.x = 0
+-- 		player.input.y = 0
+-- 
+-- 		player.moving = false
+-- 		player.firing = false
+-- 
+-- 		
+-- 	end
 end
 
 function update_animation(self, player)
@@ -156,8 +156,8 @@ function on_input(self, action_id, action)
 			local x,y,z = go.get_position().x, go.get_position().y, go.get_position().z
 
 			-- Store input in the buffer
-			table.insert(input_buffer, {player.input.x, player.input.y, x,y,z})
-			pprint(input_buffer)
+			table.insert(input_bufffer, {player.input.x, player.input.y, x,y,z})
+			pprint(input_bufffer)
 			-- print("buffer:", dump(input_buffer))
 			-- Send the movement data to the server
 			-- if should_send then
@@ -178,10 +178,10 @@ function fixed_update(self, dt)
 	current_tick = current_tick + 1 
 	update_tick = update_tick + 1
 	-- Send the buffered inputs to the server
-	if update_tick == 10 and should_send and #input_buffer > 0 then
-		local input_pack = mp.pack({id, input_buffer})
+	if update_tick == 10 and should_send and #input_bufffer > 0 then
+		local input_pack = mp.pack({id, input_bufffer})
 		udp:sendto(input_pack, server_address, server_port)
-		input_buffer = {}
+		input_bufffer = {}
 		update_tick = 0
 	end
 end

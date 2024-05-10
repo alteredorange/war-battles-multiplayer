@@ -1,0 +1,198 @@
+--#IF HEADLESS
+local can_run = true
+--#ELSE
+local can_run = false
+--#ENDIF
+
+udp_port = 12345
+udp = socket.udp()
+udp:settimeout(0)
+udp:setsockname("*", udp_port)
+
+local mp = require("utils.MessagePack")
+
+local clients = {}
+
+currentLevel = 0
+
+
+local function handle_input(player_id, pack_number, data, dt)
+
+	local client_final_x_pos = data[1]
+	local client_final_y_pos = data[2]
+	local client_steps =  data[3]
+	
+	msg.post("level-" .. currentLevel .. ":" .. all_players[player_id][hash("/player")], "movement", {client_steps, client_final_x_pos, client_final_y_pos})
+		
+end
+	
+
+
+function server_data(data, ip, port)
+	-- data_type dictionary
+	-- SERVER
+	-- 1 = auth  //TBD
+	-- 2 = load level
+	-- 3 = player input
+	-- 4 = heartbeat //TBD
+	-- CLIENT
+	-- 5 = player load
+	-- 6 = player updates
+	-- 8 = heartbeat //TBD
+
+	local unpacked_data = mp.unpack(data)
+	local player_id = unpacked_data[1]
+	local data_type = unpacked_data[2]
+	local pack_number = unpacked_data[3]
+	local message = unpacked_data[4]
+
+	
+	if not clients[player_id] then
+		clients[player_id] = {ip = ip, port = port}
+		print("New client connected: " .. clients[player_id].ip .. ":" .. clients[player_id].port)
+	end
+
+	if data_type == 1 then
+		--handle auth
+	else
+		if data_type == 2 then 
+
+			-- TODO: Adjust messages that don't have pack number, this message sends the level in the pack number slot
+			print("level load message received")
+			load_level(player_id, pack_number)
+		elseif data_type == 3 then
+			-- pprint(message)
+			handle_input(player_id, pack_number, message)
+		else
+			print("no data type")
+		end
+	end
+end
+
+-- Function to send data to a specific client
+function send_to_client(data, client_ip, client_port)
+	local msg = mp.pack(data)
+	udp:sendto(msg, client_ip, client_port)
+end
+
+-- Function to broadcast data to all connected clients
+function broadcast(data)
+	for key, client_ip_port in pairs(clients) do
+		print("sending data to "..client_ip_port.ip, client_ip_port.port)
+		send_to_client(data, client_ip_port.ip, client_ip_port.port)
+	end
+end
+
+function start_level()
+	print("Starting level")
+	local i = 1
+
+	for key, client_ip_port in pairs(clients) do
+		local ip = client_ip_port.ip
+		local port = client_ip_port.port
+		local x, y
+
+		
+		if i == 1 then x,y = -14,-247 end
+		if i == 2 then x,y = 1168,-247 end
+		if i == 3 then x,y = 1168,900 end
+		if i == 4 then x,y = -14,900 end
+		-- if i > 4 then x,y = rnd.range(-14, 1168), rnd.range(-247, 900) end
+		
+
+		msg.post("level-1:/level_handler#level_handler", "spawn_server_player", {key, x, y})
+
+		broadcast({key, 5, {x, y}})
+		print("player spawning at x=" .. x .. " y=" .. y)
+
+		i = i + 1
+	end
+end
+
+function init(self)
+	if not can_run then
+		go.delete()
+		return
+	end
+
+	print("Server started on port " .. udp_port)
+end
+
+
+
+
+function final(self)
+	print("server going down!")
+	udp:close()
+end
+
+
+function fixed_update(self, dt)
+
+	local data, ip, port = udp:receivefrom()
+	if data then
+		server_data(data, ip, port)
+	end
+
+	
+end
+
+function load_level(player_id, level)
+
+	currentLevel = level
+	msg.post("/level"..level.."_proxy#level"..level.."_proxy", "load")
+	print("server is loading level ".. level ..", wait 5 seconds for more players")
+	timer.delay(1, false, start_level)
+	
+	
+-- 	if level == 1 then
+-- 		print("laoding level 1....")
+-- 
+-- 		currentLevel = 1
+-- 		msg.post("/level1_proxy#level1_proxy", "load")
+-- 		print("server is loading level 1, wait 5 seconds for more players")
+-- 		-- TODO: have lobby/wait time fore clients to join
+-- 		
+-- 	elseif level == 2 then
+-- 		currentLevel = 2
+-- 		msg.post("/level2_proxy#level2_proxy", "load")
+-- 	end
+end
+
+
+
+function validate_position(current_position, desired_position)
+	-- TGDO Implement your validation logic here
+	local max_distance = 100 -- Adjust this value as needed
+	local distance = vmath.length(desired_position - current_position)
+	if distance <= max_distance then
+		return desired_position
+	else
+		return current_position
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("proxy_loaded") then
+		if currentLevel ~= 0 then
+			-- msg.post("/Main_menu_proxy#main_menu_proxy", "unload")
+		end
+
+		if currentLevel == 0 then
+			--do nothing/wait for level selection
+		elseif currentLevel == 1 then
+			-- load playesr into level 1
+	
+			print("level 1 loaded")
+			msg.post(sender, "init")
+			msg.post(sender, "enable")
+			msg.post(sender, "set_time_step", {factor = 1, mode = 0})
+		elseif currentLevel == 2 then
+			-- load playesr into level 2
+		end
+	elseif message_id == hash("blah") then
+		-- print("i'm down here")
+	
+	end
+end
+

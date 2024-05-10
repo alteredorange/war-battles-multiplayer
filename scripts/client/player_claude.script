@@ -4,9 +4,15 @@ local should_send = false
 local should_send = true
 --#ENDIF
 
+go.property("client_id", 0)
 
+local input_buffer = {}
+buffer_packet = 1
+local buffer_index = 1
+local buffer_table = 1
+local max_buffer_index = 50
 
-
+local pack_number = 1
 
 local mp = require("utils.MessagePack")
 
@@ -19,11 +25,11 @@ local mp = require("utils.MessagePack")
 
 -- local buffer = require("string.buffer")
 -- local tcp_client = require "defnet.tcp_client"
-local IP = "127.0.0.1" 
+local IP = "127.0.0.1"
 local PORT = 7777
 local id = rnd.range(1000, 9999)
-local players = {}
-local current_tick = 0
+
+current_tick = 0
 local update_tick = 0
 -- Server address and port
 -- local server_address = "127.0.0.1"
@@ -33,83 +39,156 @@ local update_tick = 0
 -- udp:settimeout(0)
 
 -- Buffer to store inputs
-local input_buffer = {}
+
+local function create_tables(table, count)
+	for i = 1, count do
+		table[i] = {}
+	end
+end
 
 function init(self)
+	-- timer.delay(1, true, send_client_data)
+	-- camera.acquire_focus("rendy/rendy.camera")
+	-- camera.acquire_focus("camera#camera")
+	
+	msg.post(".", "acquire_input_focus") -- [2]
 
-	camera.acquire_focus("camera#camera")
-	msg.post(".", "acquire_input_focus")            -- [2]
+	create_tables(input_buffer, max_buffer_index)
 
-	self.moving = false          
-	self.firing = false    		                   -- [3]
-	self.input = vmath.vector3()                    -- [4]
-	self.dir = vmath.vector3(0, 1, 0)               -- [5]
-	self.speed = 400             
+	self.moving = false
+	self.firing = false -- [3]
+	self.input = vmath.vector3() -- [4]
+	self.dir = vmath.vector3(0, 1, 0) -- [5]
+	self.speed = 400
+
+	self.tick = 0
 
 	-- correction vector
-	self.correction = vmath.vector3()         
+	self.correction = vmath.vector3()
 
+	self.accumulated_dt = 0
+
+	table.insert(input_buffer[buffer_index], {0, 0, 0})
+	pprint(input_buffer[buffer_index])
+	print(input_buffer[buffer_index][#input_buffer[buffer_index]][1])
+	print(input_buffer[buffer_index][#input_buffer[buffer_index]][2])
 	-- create a new player instance
-	local player_instance = {
-		moving = self.moving,
-		firing = self.firing,
-		input = self.input,
-		dir = self.dir,
-		speed = self.speed,
-		correction = self.correction
-	}
+	-- local player_instance = {
+	-- 	moving = self.moving,
+	-- 	firing = self.firing,
+	-- 	input = self.input,
+	-- 	dir = self.dir,
+	-- 	speed = self.speed,
+	-- 	correction = self.correction
+	-- }
 
 	-- store the player instance with the unique id
-	players[id] = player_instance
-
-
+	-- players[id] = player_instance
 end
 
-function final(self)                                -- [7]
-	msg.post(".", "release_input_focus")   
-	if self.client then
-		self.client.destroy()
-	end
-	udp:close()
+local sent_one_second_ago = true
+
+function send_client_data(self, table)
+	-- local sliced_buffer = input_buffer[buffer_table][buffer_packet]
+	-- pprint(sliced_buffer)
+	local input_pack = mp.pack({self.client_id, 3, table})
+	client:send(input_pack)
+	-- input_buffer = {}
+	-- buffer_packet = buffer_packet + 1
 end
 
-function update(self, dt)    
-	local player = players[id]
-	if player then
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+-- local current_input = self.input
 
-		-- reset correction
-		player.correction = vmath.vector3()
-		-- self.correction.x = 0
-		-- self.correction.y = 0
-		-- self.correction.z = 0
+function update(self, dt)
+	-- pprint(input_buffer[buffer_index])
+
+	-- local pos = go.get_position()
+	-- table.insert(input_buffer[buffer_index], {0,0,0})
+	-- if input_buffer[#input_buffer] == {self.input.x, self.input.y,
+
+	
+	-- if	(input_buffer[buffer_index][#input_buffer[buffer_index]][1] == self.input.x) and (input_buffer[buffer_index][#input_buffer[buffer_index]][2] == self.input.y) then
+	-- 	-- input_buffer[#input_buffer][3] = input_buffer[#input_buffer][3] + dt
+	-- 	-- print("Same input for this long: " .. input_buffer[buffer_index][#input_buffer[buffer_index]][3])
+	-- 	input_buffer[buffer_index][#input_buffer[buffer_index]][3] = input_buffer[buffer_index][#input_buffer[buffer_index]][3] + dt
+	-- else
+	-- 	table.insert(input_buffer[buffer_index], {self.input.x, self.input.y, dt})
+	-- 	-- table.insert(input_buffer, {self.input.x, self.input.y, dt})
+	-- 	-- print("input changed!")
+	-- end
+
+	-- pprint(input_buffer)
+	-- pprint(input_buffer[#input_buffer])
+	-- pprint(input_buffer[#input_buffer][1])
+	-- pprint(input_buffer[#input_buffer][2])
+	--
+	-- 	if self.moving and self.accumulated_dt > 1 then
+	-- 		send it!
+	-- 	end
+
+	-- if self.previous_dir ~= self.dir then
+	-- 	print("direction changed!")
+	--
+	-- 	table.insert(input_buffer, buffer_index, {self.tick, self.previous_dir.x, self.previous_dir.y, pos.x, pos.y, self.accumulated_dt})
+	-- 	send_client_data(self, input_buffer[buffer_index])
+	-- 	pprint(input_buffer[buffer_index])
+	-- 	buffer_index = buffer_index + 1
+	-- 	self.accumulated_dt = 0
+	--
+	-- 	self.previous_dir = self.dir
+	--
+	--
+	--
+	-- elseif (self.moving and self.accumulated_dt > 2) then
+	-- 	print("top self moving one")
+	--
+	-- 	table.insert(input_buffer, buffer_index, {self.tick, self.dir.x, self.dir.y, pos.x, pos.y, self.accumulated_dt})
+	-- 	send_client_data(self, input_buffer[buffer_index])
+	-- 	pprint(input_buffer[buffer_index])
+	-- 	buffer_index = buffer_index + 1
+	-- 	self.accumulated_dt = 0
+	--
+	--
+	--
+	-- elseif self.accumulated_dt > 5 then
+	-- 	print("time to send (5 seconds!)")
+	--
+	-- 	table.insert(input_buffer, buffer_index, {self.tick, self.dir.x, self.dir.y, pos.x, pos.y, self.accumulated_dt})
+	-- 	send_client_data(self, input_buffer[buffer_index])
+	-- 	pprint(input_buffer[buffer_index])
+	-- 	buffer_index = buffer_index + 1
+	-- 	self.accumulated_dt = 0
+	--
+	-- 	end
 
 
-		update_animation(self, player)                 
-		if player.moving then
-			local pos = go.get_position()
-			pos = pos + player.dir * player.speed * dt
-			go.set_position(pos)
-		end
 
-		if player.firing then
-			local angle = math.atan2(player.dir.y, player.dir.x)
-			local rot = vmath.quat_rotation_z(angle)
-			local props = { dir = player.dir }
-			factory.create("#rocketfactory", nil, rot, props)
-		end
+	--
+	-- if self.moving then
+	-- 	local x,y = go.get_position().x, go.get_position().y
+	-- 	table.insert(input_buffer, buffer_index, {tick, true, self.input.x, self.input.y, x, y, dt})
+	-- 	buffer_index = buffer_index + 1
+	-- 	-- pprint(input_buffer[buffer_table][buffer_packet])
+	-- else
+	-- 	-- table.insert(input_buffer[buffer_table][buffer_packet], buffer_index, {tick, false, nil, nil, nil, nil, dt})
+	-- 	-- buffer_index = buffer_index + 1
+	-- 	-- pprint(input_buffer[buffer_table][buffer_packet])
+	-- end
 
-		player.input.x = 0
-		player.input.y = 0
+	-- current_tick = current_tick + 1
+	-- self.tick = self.tick + 1
+	-- self.accumulated_dt = self.accumulated_dt + dt
 
-		player.moving = false
-		player.firing = false
 
-		
-	end
+
+	-- print(self.tick)
 end
 
-function update_animation(self, player)
-	local anim_dir = vmath.vector3(player.input.x, player.input.y, 0)
+function update_animation(self)
+	local anim_dir = vmath.vector3(self.input.x, self.input.y, 0)
 
 	if anim_dir ~= self.anim_dir then
 		if self.anim_id ~= nil then
@@ -137,98 +216,151 @@ function update_animation(self, player)
 	end
 end
 
-function on_input(self, action_id, action) 
+function on_input(self, action_id, action)
+	if action_id == hash("up") then
+		self.input.y = 1
+	elseif action_id == hash("down") then
+		self.input.y = -1
+	elseif action_id == hash("left") then
+		self.input.x = -1
+	elseif action_id == hash("right") then
+		self.input.x = 1
+	elseif action_id == hash("fire") and action.pressed then
+		self.firing = true
+	end
 
-
-	local player = players[id]
-	if player then
-
-		if action_id == hash("up") then
-			player.input.y = 1
-		elseif action_id == hash("down") then
-			player.input.y = -1
-		elseif action_id == hash("left") then
-			player.input.x = -1
-		elseif action_id == hash("right") then
-			player.input.x = 1
-		elseif action_id == hash("fire") and action.pressed then
-			player.firing = true
-		end
-
-		if vmath.length(player.input) > 0 then
-
-			local x,y,z = go.get_position().x, go.get_position().y, go.get_position().z
-
-			-- Store input in the buffer
-			table.insert(input_buffer, {player.input.x, player.input.y, x,y,z})
-			-- pprint(input_buffer)
-			-- print("buffer:", dump(input_buffer))
-			-- Send the movement data to the server
-			-- if should_send then
-			-- 	local pos = go.get_position()
-			-- 	local message = id .. "*" .. player.input.x .. "*" .. player.input.y .. "*" .. pos
-			-- 	udp:sendto(message, server_address, server_port)
-			-- end
-
-		
-			player.moving = true                          -- [16]
-			player.dir = vmath.normalize(player.input)      -- [17]
-			
-		end
+	if vmath.length(self.input) > 0 then
+		self.moving = true
+		self.dir = vmath.normalize(self.input)
 	end
 end
 
-
 function fixed_update(self, dt)
+-- 
+-- 	if	(input_buffer[buffer_index][#input_buffer[buffer_index]][1] == self.input.x) and (input_buffer[buffer_index][#input_buffer[buffer_index]][2] == self.input.y) then
+-- 		-- input_buffer[#input_buffer][3] = input_buffer[#input_buffer][3] + dt
+-- 		-- print("Same input for this long: " .. input_buffer[buffer_index][#input_buffer[buffer_index]][3])
+-- 		input_buffer[buffer_index][#input_buffer[buffer_index]][3] = input_buffer[buffer_index][#input_buffer[buffer_index]][3] + dt
+-- 	else
+-- 		table.insert(input_buffer[buffer_index], {self.input.x, self.input.y, dt})
+-- 		-- table.insert(input_buffer, {self.input.x, self.input.y, dt})
+-- 		-- print("input changed!")
+-- 	end
 
+	--reset colission data
+	-- self.correction.x = 0
+	-- self.correction.y = 0
+	-- self.correction.z = 0
 
+	update_animation(self)
 
+	if self.moving then
 		
-	update_tick = update_tick + 1
-	-- Send the buffered inputs to the server
-	if update_tick == 10 then
-		if  should_send and #input_buffer > 0 then
-			-- print("sending")
-			local input_pack = mp.pack({id, 3, input_buffer})
-			-- local res = udp:sendto(input_pack, server_address, server_port)
-			client:send(input_pack)
+		table.insert(input_buffer[buffer_index], {self.input.x, self.input.y, dt})
+		
+		local pos = go.get_position()
+		new_pos = pos + self.dir * (self.speed * dt)
+		go.set_position(new_pos)
+	end
 
+	if self.firing then
+		local angle = math.atan2(self.dir.y, self.dir.x)
+		local rot = vmath.quat_rotation_z(angle)
+		local props = {dir = self.dir}
+		factory.create("#rocketfactory", nil, rot, props)
+	end
+	
+	self.input.x = 0
+	self.input.y = 0
+
+	self.moving = false
+	self.firing = false
+
+
+	
+	if update_tick == 10 then
+
+		if #input_buffer[buffer_index] ~= 0 then
+			local pos = go.get_position()
+			-- print(pos)
+		
+
+			local sliced_buffer = input_buffer[buffer_index]
+			local input_pack = mp.pack({self.client_id, 3, pack_number, {pos.x, pos.y, sliced_buffer}})
+			client:send(input_pack)
+			pack_number = pack_number + 1
+		
+		-- print("buffer 2 length:")
+		-- print(#input_buffer[buffer_index])player
+		-- local x_input = input_buffer[buffer_index][#input_buffer[buffer_index]][1]
+		-- local y_input = input_buffer[buffer_index][#input_buffer[buffer_index]][2]
+		-- print(x_input, y_input)
+		-- check next index is not null (i.e. > 20 and it's empty
+		if buffer_index < max_buffer_index then
+			if #input_buffer[buffer_index + 1] == 0 then
+				buffer_index = buffer_index + 1
+			else
+				print("this buffer isn't empty!")
+				input_buffer[buffer_index + 1] = {}
+				-- TODO: Handle non-empty buffers
+				buffer_index = buffer_index + 1
+			end
+		else
+			if #input_buffer[1] == 0 then
+				buffer_index = 1
+			else
+				print("this buffer isn't empty!")
+				input_buffer[1] = {}
+				-- TODO: Handle non-empty buffers
+				
+				buffer_index = 1
+			end
+	
 
 			
-			-- udp:sendto(mp.pack({id, 2, "hi"}), server_address, server_port)
-			-- pprint(res)
-			input_buffer = {}
 		end
-	update_tick = 0
+		
 	end 
+	update_tick = 0
+		-- table.insert(input_buffer[buffer_index], {x_input, y_input, 0})
+	end
+
+	-- 	-- Send the buffered inputs to the server
+	-- 	if update_tick == 10 then
+	-- 		sliced_buffer = input_buffer[buffer_table][buffer_index]
+	-- 		-- pprint(sliced_buffer)
+	-- 		local input_pack = mp.pack({self.client_id, 3, sliced_buffer})
+	-- 		client:send(input_pack)
+	-- 		-- input_buffer = {}
+	-- 		buffer_index = buffer_index + 1
+	-- 		update_tick = 0
+	-- 	end
+	--
+	update_tick = update_tick + 1
+	-- pprint(input_buffer)
 end
 
 function on_message(self, message_id, message, sender)
-	local player = players[id]
-	if player then
-		-- Handle collision
-		-- https://defold.com/manuals/physics-resolving-collisions/
-		if message_id == hash("contact_point_response") then
-			-- Get the info needed to move out of collision. We might
-			-- get several contact points back and have to calculate
-			-- how to move out of all of them by accumulating a
-			-- correction vector for this frame:
-			if message.distance > 0 then
-				-- First, project the accumulated correction onto
-				-- the penetration vector
-				local proj = vmath.project(player.correction, message.normal * message.distance)
-				if proj < 1 then
-					-- Only care for projections that does not overshoot.
-					local comp = (message.distance - message.distance * proj) * message.normal
-					-- Apply compensation
-					go.set_position(go.get_position() + comp)
-					-- Accumulate correction done
-					player.correction = player.correction + comp
-				end
-			end
-		end
-
-	end
-
-
+	-- Handle collision
+	-- https://defold.com/manuals/physics-resolving-collisions/
+	-- if message_id == hash("contact_point_response") then
+	-- 	print("client collision!")
+	-- 	-- Get the info needed to move out of collision. We might
+	-- 	-- get several contact points back and have to calculate
+	-- 	-- how to move out of all of them by accumulating a
+	-- 	-- correction vector for this frame:
+	-- 	if message.distance > 0 then
+	-- 		-- First, project the accumulated correction onto
+	-- 		-- the penetration vector
+	-- 		local proj = vmath.project(self.correction, message.normal * message.distance)
+	-- 		if proj < 1 then
+	-- 			-- Only care for projections that does not overshoot.
+	-- 			local comp = (message.distance - message.distance * proj) * message.normal
+	-- 			-- Apply compensation
+	-- 			go.set_position(go.get_position() + comp)
+	-- 			-- Accumulate correction done
+	-- 			self.correction = self.correction + comp
+	-- 		end
+	-- 	end
+	-- end
 end

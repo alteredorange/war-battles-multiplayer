@@ -6,9 +6,11 @@ dependencies#1 = https://github.com/britzl/defnet/archive/master.zip
 dependencies#2 = https://github.com/selimanac/defold-random/archive/master.zip
 dependencies#3 = https://github.com/defold/extension-lua-preprocessor/archive/refs/tags/1.1.3.zip
 dependencies#4 = https://github.com/britzl/gooey/archive/refs/tags/10.4.1.zip
+dependencies#5 = https://github.com/klaytonkowalski/library-defold-rendy/archive/main.zip
 
 [bootstrap]
 main_collection = /main/loader.collectionc
+render = /rendy/rendy.renderc
 
 [input]
 game_binding = /input/game.input_bindingc
@@ -17,6 +19,7 @@ game_binding = /input/game.input_bindingc
 scale = 0.02
 debug = 0
 use_fixed_timestep = 1
+gravity_y = 0.0
 
 [script]
 shared_state = 1
@@ -26,5 +29,8 @@ max_tile_count = 10000
 
 [engine]
 run_while_iconified = 0
-fixed_update_frequency = 30
+fixed_update_frequency = 60
+
+[display]
+height = 540
 

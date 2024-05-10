@@ -8,8 +8,6 @@ local mp = require("utils.MessagePack")
 
 player_id = rnd.range(1000, 9999)
 
-
-
 server_address = "127.0.0.1"
 server_port = 12345
 client = socket.udp()
@@ -19,16 +17,7 @@ client:setpeername(server_address, server_port)
 
 current_level = 0
 
--- message types
--- 1 = auth
--- 2 = level request
--- 3 = client movement
--- 4 = other player movement
--- 5 = correction (from server)
-
-
 counter = 0
-
 
 function init(self)
 
@@ -36,8 +25,6 @@ function init(self)
 			go.delete()
 			return
 		end 
-
-		
 	
 	msg.post("/Main_menu_proxy#main_menu_proxy", "load")
 
@@ -47,6 +34,8 @@ function init(self)
 end
 
 function final(self)
+
+	print("client handler going down!")
 	client:close()
 	go.delete()
 	-- Add finalization code here
@@ -55,6 +44,11 @@ function final(self)
 end
 
 function update(self, dt)
+	-- print("ahahhahahahaha")
+	-- local data = client:receive()
+	-- if data then 
+	-- 	client_data(data) 
+	-- end
 	-- Add update code here
 	-- Learn more: https://defold.com/manuals/script/
 	-- Remove this function if not needed
@@ -62,6 +56,8 @@ end
 
 
 function client_data(data)
+	-- print("got some data")
+	-- pprint(data)
 	
 	-- data_type dictionary
 	-- SERVER
@@ -75,6 +71,7 @@ function client_data(data)
 	-- 8 = heartbeat //TBD
 
 	local unpacked_data = mp.unpack(data)
+	-- pprint(unpacked_data)
 	local pid = unpacked_data[1]
 	local data_type = unpacked_data[2]
 	local message = unpacked_data[3]
@@ -84,9 +81,20 @@ function client_data(data)
 		local x = message[1]
 		local y = message[2]
 		if pid == player_id then
-			msg.post("level-01:/level_handler#level_handler", "spawn_main_player", {pid,x,y} ) 
+				print("sending spawn main")
+				msg.post("level-1:/level_handler#level_handler", "spawn_main_player", {pid, x, y})
 		else
-			msg.post("level-01:/level_handler#level_handler", "spawn_other_player", {pid,x,y} ) 
+				print("sending spawn other")
+				msg.post("level-1:/level_handler#level_handler", "spawn_other_player", {pid, x, y})
+		end
+
+	elseif data_type == 6 then
+		local x = message[1]
+		local y = message[2]
+		-- print("got player movement!")
+		if pid ~= player_id then
+			print("sending other player movement updates")
+			msg.post("level-" .. current_level .. ":" .. all_players[pid][hash("/player")], "other_player_movement", {x,y})
 		end
 	end
 end 
@@ -94,6 +102,7 @@ end
 
 
 function fixed_update(self, dt)
+	-- print("alsdkjflsadkjf")
 	-- client:send(mp.pack({player_id, 5, dt}))
 	local data = client:receive()
 	if data then 
@@ -115,6 +124,8 @@ function on_message(self, message_id, message, sender)
 		if current_level == 1 then msg.post("/level1_proxy#level1_proxy", "load") end
 		if current_level == 2 then msg.post("/level2_proxy#level2_proxy", "load") end
 
+		print("client handler loading level")
+		
 	elseif message_id == hash("proxy_loaded") then
 
 		if current_level ~= 0 then
@@ -124,11 +135,12 @@ function on_message(self, message_id, message, sender)
 		if current_level == 0 then
 			msg.post(sender, "init")
 			msg.post(sender, "enable")
-			msg.post("/Main_menu_proxy#main_menu_prox", "acquire_input_focus")
+			msg.post("/Main_menu_proxy#main_menu_proxy", "acquire_input_focus")
 		elseif current_level == 1 then
 			msg.post(sender, "init")
 			msg.post(sender, "enable")
 			msg.post("/level1_proxy#level1_proxy", "acquire_input_focus")
+			print("loading level 1...")
 		elseif current_level == 2 then
 			msg.post("/level2_proxy#level2_proxy", "acquire_input_focus")
 		end

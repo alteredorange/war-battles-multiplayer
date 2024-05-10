@@ -4,7 +4,7 @@ embedded_instances {
   id: "client_handler"
   data: "components {\n"
   "  id: \"client_handler\"\n"
-  "  component: \"/main/client_handler.script\"\n"
+  "  component: \"/scripts/client/client_handler.script\"\n"
   "  position {\n"
   "    x: 0.0\n"
   "    y: 0.0\n"
