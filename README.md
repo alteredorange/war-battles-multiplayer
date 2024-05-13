@@ -1,4 +1,4 @@
-# War battles MULTIPLAYER
+# War Battles MULTIPLAYER
 
 This is an addition to the single player War Battles Tutorial (https://github.com/defold/tutorial-war-battles). It's highly recommended you start there if you're knew to Defold, so you know the basics of the scene. So far this update uses a headless server control a simple multiplayer experience. Only position syncing works at the moment.
 
