@@ -34,3 +34,10 @@ fixed_update_frequency = 60
 [display]
 height = 540
 
+[graphics]
+default_texture_min_filter = nearest
+default_texture_mag_filter = nearest
+
+[sprite]
+subpixels = 0
+

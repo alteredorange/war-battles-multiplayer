@@ -56,7 +56,7 @@ function init(self)
 end
 
 
-function send_client_data(self, table)
+local function send_client_data(self, table)
 	local input_pack = mp.pack({self.client_id, 3, table})
 	client:send(input_pack)
 end
@@ -70,7 +70,7 @@ end
 	
 
 
-function update_animation(self)
+local function update_animation(self)
 	local anim_dir = vmath.vector3(self.input.x, self.input.y, 0)
 
 	if anim_dir ~= self.anim_dir then
@@ -163,7 +163,7 @@ function fixed_update(self, dt)
 			if #input_buffer[buffer_index + 1] == 0 then
 				buffer_index = buffer_index + 1
 			else
-				print("this buffer isn't empty!")
+				-- print("this buffer isn't empty!")
 				input_buffer[buffer_index + 1] = {}
 				-- TODO: Handle non-empty buffers
 				buffer_index = buffer_index + 1
@@ -172,7 +172,7 @@ function fixed_update(self, dt)
 			if #input_buffer[1] == 0 then
 				buffer_index = 1
 			else
-				print("this buffer isn't empty!")
+				-- print("this buffer isn't empty!")
 				input_buffer[1] = {}
 				-- TODO: Handle non-empty buffers
 				

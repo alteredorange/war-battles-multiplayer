@@ -15,6 +15,9 @@ local clients = {}
 
 currentLevel = 0
 
+local waiting_for_players = false
+
+
 
 local function handle_input(player_id, pack_number, data, dt)
 
@@ -78,7 +81,7 @@ end
 -- Function to broadcast data to all connected clients
 function broadcast(data)
 	for key, client_ip_port in pairs(clients) do
-		print("sending data to "..client_ip_port.ip, client_ip_port.port)
+		-- print("sending data to "..client_ip_port.ip, client_ip_port.port)
 		send_to_client(data, client_ip_port.ip, client_ip_port.port)
 	end
 end
@@ -86,12 +89,13 @@ end
 function start_level()
 	print("Starting level")
 	local i = 1
-
 	for key, client_ip_port in pairs(clients) do
 		local ip = client_ip_port.ip
 		local port = client_ip_port.port
 		local x, y
-
+		-- print("going through players...")
+		-- print(key)
+		-- print(client_ip_port)
 		
 		if i == 1 then x,y = -14,-247 end
 		if i == 2 then x,y = 1168,-247 end
@@ -102,11 +106,12 @@ function start_level()
 
 		msg.post("level-1:/level_handler#level_handler", "spawn_server_player", {key, x, y})
 
-		broadcast({key, 5, {x, y}})
+		broadcast({key, 5, {x, y}})  
 		print("player spawning at x=" .. x .. " y=" .. y)
 
 		i = i + 1
 	end
+	waiting_for_players = false
 end
 
 function init(self)
@@ -138,11 +143,14 @@ function fixed_update(self, dt)
 end
 
 function load_level(player_id, level)
+	
+	if waiting_for_players == true then return end
 
 	currentLevel = level
 	msg.post("/level"..level.."_proxy#level"..level.."_proxy", "load")
 	print("server is loading level ".. level ..", wait 5 seconds for more players")
-	timer.delay(1, false, start_level)
+	waiting_for_players = true	
+	timer.delay(5, false, start_level)
 	
 	
 -- 	if level == 1 then

@@ -75,17 +75,25 @@ function client_data(data)
 	local pid = unpacked_data[1]
 	local data_type = unpacked_data[2]
 	local message = unpacked_data[3]
-	pprint(data_data)
+	-- pprint(data_data)
 
 	if data_type == 5 then
-		local x = message[1]
-		local y = message[2]
-		if pid == player_id then
-				print("sending spawn main")
-				msg.post("level-1:/level_handler#level_handler", "spawn_main_player", {pid, x, y})
-		else
-				print("sending spawn other")
-				msg.post("level-1:/level_handler#level_handler", "spawn_other_player", {pid, x, y})
+
+		
+
+		if all_players[pid] then
+			print ("player already spawned")
+		else 
+			table.insert(all_players, pid, 0)
+			local x = message[1]
+			local y = message[2]
+			if pid == player_id then
+					print("sending spawn main")
+					msg.post("level-1:/level_handler#level_handler", "spawn_main_player", {pid, x, y})
+			else
+					print("sending spawn other")
+					msg.post("level-1:/level_handler#level_handler", "spawn_other_player", {pid, x, y})
+			end
 		end
 
 	elseif data_type == 6 then
@@ -93,7 +101,7 @@ function client_data(data)
 		local y = message[2]
 		-- print("got player movement!")
 		if pid ~= player_id then
-			print("sending other player movement updates")
+			-- print("sending other player movement updates")
 			msg.post("level-" .. current_level .. ":" .. all_players[pid][hash("/player")], "other_player_movement", {x,y})
 		end
 	end

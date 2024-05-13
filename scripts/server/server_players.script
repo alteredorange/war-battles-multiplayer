@@ -78,32 +78,32 @@ end
 
 
 function update_animation(self, player)
-	local anim_dir = vmath.vector3(self.input.x, self.input.y, 0)
-
-	if anim_dir ~= self.anim_dir then
-		if self.anim_id ~= nil then
-			sprite.stop_animation(self.anim_id)
-			self.anim_id = nil
-		end
-
-		if vmath.length(anim_dir) > 0 then
-			local anim_name
-			if anim_dir.x > 0 then
-				anim_name = "player-right"
-			elseif anim_dir.x < 0 then
-				anim_name = "player-left"
-			elseif anim_dir.y > 0 then
-				anim_name = "player-up"
-			elseif anim_dir.y < 0 then
-				anim_name = "player-down"
-			else
-				anim_name = "player-idle"
-			end
-			sprite.play_flipbook("#sprite", anim_name)
-		end
-
-		self.anim_dir = anim_dir
-	end
+-- 	local anim_dir = vmath.vector3(self.input.x, self.input.y, 0)
+-- 
+-- 	if anim_dir ~= self.anim_dir then
+-- 		if self.anim_id ~= nil then
+-- 			sprite.stop_animation(self.anim_id)
+-- 			self.anim_id = nil
+-- 		end
+-- 
+-- 		if vmath.length(anim_dir) > 0 then
+-- 			local anim_name
+-- 			if anim_dir.x > 0 then
+-- 				anim_name = "player-right"
+-- 			elseif anim_dir.x < 0 then
+-- 				anim_name = "player-left"
+-- 			elseif anim_dir.y > 0 then
+-- 				anim_name = "player-up"
+-- 			elseif anim_dir.y < 0 then
+-- 				anim_name = "player-down"
+-- 			else
+-- 				anim_name = "player-idle"
+-- 			end
+-- 			sprite.play_flipbook("#sprite", anim_name)
+-- 		end
+-- 
+-- 		self.anim_dir = anim_dir
+-- 	end
 end
 
 
@@ -134,15 +134,13 @@ function fixed_update(self, dt)
 	self.firing = false
 	
 -- Debugging location
-	if tick == 60 then
-		print("final position SERVER/CLIENT of "..self.client_id..":")
-		
-		print(go.get_position())
-		print(client_final_pos)
-		tick = 0
-	end 
-
-	tick = tick + 1 
+	-- if tick == 60 then
+	-- 	print("final position SERVER/CLIENT of "..self.client_id..":")
+	-- 	print(go.get_position())
+	-- 	print(client_final_pos)
+	-- 	tick = 0
+	-- end 
+	-- tick = tick + 1 
 
 	if #coroutines_queue > 0 then
 		execute_next_coroutine()

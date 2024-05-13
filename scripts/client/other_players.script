@@ -1,6 +1,13 @@
 go.property("client_id", 0)
+go.property("speed", 400)
+go.property("target_position", vmath.vector3())
+
+local direction = nil
+-- self.target_position = vmath.vector3()
 
 function init(self)
+	
+	
 	-- Add initialization code here
 	-- Learn more: https://defold.com/manuals/script/
 	-- Remove this function if not needed
@@ -12,33 +19,76 @@ function final(self)
 	-- Remove this function if not needed
 end
 
+local function update_animation(self)
+	local anim_dir = direction
+	print(direction)
+
+	if anim_dir ~= self.anim_dir then
+		if self.anim_id ~= nil then
+			sprite.stop_animation(self.anim_id)
+			self.anim_id = nil
+		end
+
+		if vmath.length(anim_dir) > 0 then
+			local anim_name
+			if anim_dir.x > 0 then
+				anim_name = "player-right"
+			elseif anim_dir.x < 0 then
+				anim_name = "player-left"
+			elseif anim_dir.y > 0 then
+				anim_name = "player-up"
+			elseif anim_dir.y < 0 then
+				anim_name = "player-down"
+			else
+				anim_name = "player-idle"
+			end
+			sprite.play_flipbook("#sprite", anim_name)
+		end
+
+		self.anim_dir = anim_dir
+	end
+end
+
+
+
 function update(self, dt)
+	update_animation(self)
+	
+	local current_position = go.get_position()
+	local diff = self.target_position - current_position
+	local distance_to_target = vmath.length(diff)
+	if distance_to_target > 0 then
+		direction = vmath.normalize(diff)
+		local distance_to_move = math.min(distance_to_target, self.speed * dt)
+		local new_position = current_position + direction * distance_to_move
+		go.set_position(new_position)
+	end 
 	-- Add update code here
 	-- Learn more: https://defold.com/manuals/script/
 	-- Remove this function if not needed
 end
 
 function fixed_update(self, dt)
-	-- This function is called if 'Fixed Update Frequency' is enabled in the Engine section of game.project
-	-- Can be coupled with fixed updates of the physics simulation if 'Use Fixed Timestep' is enabled in
-	-- Physics section of game.project
-	-- Add update code here
-	-- Learn more: https://defold.com/manuals/script/
-	-- Remove this function if not needed
+
 end
+
+
 
 function on_message(self, message_id, message, sender)
 
+
+
 	if message_id == hash("other_player_movement") then
-		print("the other player moved!")
+		-- print("the other player moved!")
 		local final_x = message[1]
 		local final_y = message[2]
 		local client_final = vmath.vector3(final_x, final_y, 1)
+		self.target_position = client_final
 
-		local start_pos = go.get_position()
-
-		local pos = vmath.lerp(1, start_pos, client_final)
-		go.set_position(client_final)
+-- 		local start_pos = go.get_position()
+-- 
+-- 		local pos = vmath.lerp(1, start_pos, client_final)
+-- 		go.set_position(client_final)
 	end 
 
 end

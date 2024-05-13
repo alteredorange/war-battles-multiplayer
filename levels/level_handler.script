@@ -39,7 +39,7 @@ function on_message(self, message_id, message, sender)
 		local x = message[2]
 		local y = message[3]
 		local props = {}
-		props[hash("/player")] = {client_id = client_id}
+		props[hash("/player")] = {client_id = client_id, target_position = vmath.vector3(x,y,0)}
 		
 		local id = collectionfactory.create("/spawner#other_players_spawner",  vmath.vector3(x, y, 0), nil, props)
 		table.insert(all_players, client_id, id)
